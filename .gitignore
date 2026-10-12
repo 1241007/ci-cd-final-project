@@ -11,6 +11,7 @@ unittests.xml
 # database files
 db/*
 !db/.keep
+*.db
 
 # SonarQube Reports
 .scannerwork/
@@ -99,6 +100,7 @@ celerybeat-schedule
 
 # virtualenv
 venv/
+.venv/
 ENV/
 
 # Spyder project settings
