@@ -1,49 +1,99 @@
-# TDD / BDD Final Project Template
+# CI/CD Final Project: eCommerce Product Catalog Service
 
-This repository contains the template to be used for the Final Project for the Coursera course **Introduction to TDD/BDD**.
+[![CI Workflow](https://github.com/1241007/ci-cd-final-project/actions/workflows/workflow.yml/badge.svg)](https://github.com/1241007/ci-cd-final-project/actions/workflows/workflow.yml)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Python 3.9](https://img.shields.io/badge/python-3.9-blue.svg)](https://www.python.org/downloads/release/python-390/)
 
-## Usage
+## Project Overview
 
-This repository is to be used as a template to create your own repository in your own GitHub account. No need to Fork it as it has been set up as a Template. This will avoid confusion when making Pull Requests in the future.
+This repository contains the completed **CI/CD Final Project** for the IBM DevOps and Software Engineering Professional Certificate capstone. It implements an enterprise-grade Continuous Integration (CI) and Continuous Delivery (CD) workflow for a cloud-native RESTful eCommerce Product microservice.
 
-From the GitHub **Code** page, press the green **Use this template** button to create your own repository from this template. 
+The service provides REST APIs to manage products (Create, Read, Update, Delete, List, Query by category, availability, and name) backed by PostgreSQL and Flask.
 
-Name your repo: `tdd-bdd-final-project`.
+---
 
-## Setup
+## Architecture & DevOps Toolchain
 
-After entering the lab environment you will need to run the `setup.sh` script in the `./bin` folder to install the prerequisite software.
+The solution employs a modern, dual-layer cloud-native pipeline:
 
-```bash
-bash bin/setup.sh
+```text
+               +-------------------------------------------------+
+               |             Developer Git Push                  |
+               +-----------------------+-------------------------+
+                                       |
+                   +-------------------+-------------------+
+                   |                                       |
+                   v                                       v
+      +-------------------------+             +-------------------------+
+      |      GitHub Actions     |             |    OpenShift Pipelines  |
+      |       (CI Workflow)     |             |      (Tekton CI/CD)     |
+      +-------------------------+             +-------------------------+
+      | 1. Checkout Code        |             | 1. Cleanup Workspace    |
+      | 2. Setup Python 3.9     |             | 2. Git Clone Repository |
+      | 3. Install Dependencies |             | 3. Lint with Flake8     |
+      | 4. Lint with Flake8     |             | 4. Unit Tests with Nose |
+      | 5. Unit Tests with Nose |             | 5. Build Image (Buildah)|
+      +-------------------------+             | 6. Deploy to OpenShift  |
+                                              +-------------------------+
 ```
 
-Then you must exit the shell and start a new one for the Python virtual environment to be activated.
+### 1. Continuous Integration (CI) — GitHub Actions
+- **Trigger**: Every `push` and `pull_request` against the `main` branch.
+- **Workflow File**: `.github/workflows/workflow.yml`
+- **Key Stages**:
+  - `actions/checkout@v4`: Clones the latest commit.
+  - `actions/setup-python@v5`: Configures Python 3.9 environment.
+  - `Install dependencies`: Upgrades pip and installs packages from `requirements.txt`.
+  - `Lint with flake8`: Enforces PEP 8 syntax and formatting standards.
+  - `Run unit tests with nose`: Executes unit test suites with code coverage analysis using PostgreSQL service container.
 
+### 2. Continuous Delivery (CD) — Tekton & Red Hat OpenShift Pipelines
+- **Pipeline Resource**: `cd-pipeline`
+- **Tasks Definition**: `.tekton/tasks.yml`
+- **Pipeline Definition**: `.tekton/pipeline.yml`
+- **Pipeline Sequence**:
+  1. `cleanup`: Employs an `alpine` container to scrub previous checkout artifacts from the persistent workspace.
+  2. `git-clone`: Pulls the Git repository into the shared PVC workspace (`pipelinerun-pvc`).
+  3. `flake8`: Runs style checks and syntax analysis inside a `python:3.9-slim` container.
+  4. `nose`: Runs automated test suite (`nosetests -v`) with coverage.
+  5. `buildah`: Builds the OCI-compliant container image from the repository `Dockerfile` and pushes to the internal OpenShift image registry.
+  6. `deploy`: Performs a rolling update using `openshift-client` (`oc apply` and `oc rollout status`).
+
+---
+
+## Local Development & Testing
+
+### Running Tests Locally
+To execute the test suite and verify coverage:
 ```bash
-exit
+nosetests -v --with-spec --spec-color --with-coverage --cover-package=service
 ```
 
-## Tasks
-
-In this project you will use good Test Driven Development (TDD) and Behavior Driven Development (BDD) techniques to write TDD test cases, BDD scenarios, and code, updating the following files:
-
+### Running the Linter
+To verify code formatting and styling:
 ```bash
-tests/test_models.py
-tests/test_routes.py
-service/routes.py
-features/products.feature
-features/steps/load_steps.py
+flake8 service tests --count --select=E9,F63,F7,F82 --show-source --statistics
+flake8 service tests --count --max-complexity=10 --max-line-length=127 --statistics
 ```
 
-You will be given partial implementations in each of these files to get you started. Use those implementations as examples of the code you should write.
+---
 
-## License
+## Deliverables & Evidence Summary
 
-Licensed under the Apache License. See [LICENSE](/LICENSE)
+- **GitHub Repository**: [https://github.com/1241007/ci-cd-final-project](https://github.com/1241007/ci-cd-final-project)
+- **CI Workflow**: `.github/workflows/workflow.yml`
+- **Tekton Pipeline Resources**: `.tekton/tasks.yml` & `.tekton/pipeline.yml`
+- **OpenShift PVC Details**: `oc-pipelines-console-pvc-details.png`
+- **OpenShift Pipeline Structure**: `oc-pipelines-oc-final.png`
+- **OpenShift Successful PipelineRun**: `oc-pipelines-oc-green.png`
+
+---
 
 ## Author
 
-John Rofrano, Senior Technical Staff Member, DevOps Champion, @ IBM Research
+- **Rushikesh Pathare** ([@1241007](https://github.com/1241007))
+- DevOps Engineer
 
-## <h3 align="center"> © IBM Corporation 2023. All rights reserved. <h3/>
+## License
+
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
